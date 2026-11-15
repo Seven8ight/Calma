@@ -16,7 +16,7 @@ import com.example.schoolproject.ui.theme.SchoolProjectTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge();
         setContent {
             SchoolProjectTheme {
                 Surface(
