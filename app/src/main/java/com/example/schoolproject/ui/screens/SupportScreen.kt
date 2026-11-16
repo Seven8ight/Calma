@@ -319,6 +319,8 @@ fun CounsellingTabContent(
     onBookCounsellorClicked: () -> Unit
 ) {
     val counsellors by viewModel.counsellors.collectAsState()
+    val slots by viewModel.slots.collectAsState()
+    val busy by viewModel.busy.collectAsState()
 
     LazyColumn(
         modifier = Modifier
@@ -334,10 +336,14 @@ fun CounsellingTabContent(
             )
         }
 
+        item {
+            androidx.compose.material3.OutlinedButton(onClick = { viewModel.reloadData() }, enabled = !busy) { Text("Refresh availability") }
+        }
         if (counsellors.isEmpty()) item { Text("No counsellors are listed yet. Please check again later.") }
         items(counsellors) { counsellor ->
             CounsellorCard(
                 counsellor = counsellor,
+                availableSlots = slots.count { it.counsellor_id == counsellor.id },
                 onBookClicked = {
                     viewModel.selectCounsellorForBooking(counsellor)
                     onBookCounsellorClicked()
@@ -382,6 +388,7 @@ fun CounsellingTabContent(
 @Composable
 fun CounsellorCard(
     counsellor: Counsellor,
+    availableSlots: Int,
     onBookClicked: () -> Unit
 ) {
     Card(
@@ -437,10 +444,10 @@ fun CounsellorCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = counsellor.availabilityStatus,
+                        text = if (availableSlots == 0) "No times published yet" else "$availableSlots available times",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (counsellor.isAvailableToday) CalmaGreenDark else CalmaAmber
+                        color = if (availableSlots > 0) CalmaGreenDark else CalmaAmber
                     )
                 }
             }
@@ -454,7 +461,7 @@ fun CounsellorCard(
                 modifier = Modifier.height(38.dp)
             ) {
                 Text(
-                    text = "Book",
+                    text = "Select",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White

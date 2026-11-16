@@ -86,12 +86,19 @@ class CalmaRepository : CalmaDataSource {
 
     override suspend fun fetchBookings(userId: String, counsellors: List<Counsellor>): List<Booking> {
         requireUser(userId)
-        return client.from("bookings").select {
-            filter { eq("user_id", userId) }
-            order("created_at", Order.DESCENDING)
-        }.decodeList<BookingDto>().map { dto ->
-            dto.toModel(counsellors.first { it.id == dto.counsellor_id })
-        }
+        // Fetch history in small pages so older appointments are not silently cut off.
+        val rows = mutableListOf<BookingDto>()
+        var page: List<BookingDto>
+        do {
+            page = client.from("bookings").select {
+                filter { eq("user_id", userId) }
+                order("created_at", Order.DESCENDING)
+                order("id", Order.DESCENDING)
+                range(rows.size.toLong(), rows.size.toLong() + 99)
+            }.decodeList<BookingDto>()
+            rows.addAll(page)
+        } while (page.size == 100)
+        return rows.map { dto -> dto.toModel(counsellors.first { it.id == dto.counsellor_id }) }
     }
 
     override suspend fun fetchChatMessages(userId: String): List<ChatMessage> {
@@ -115,7 +122,9 @@ class CalmaRepository : CalmaDataSource {
         filter { eq("is_booked", false); gte("slot_date", java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())) }
         order("slot_date", Order.ASCENDING)
         order("slot_time", Order.ASCENDING)
-    }.decodeList<CounsellorSlotDto>().filter { com.example.schoolproject.data.helpers.isFutureSlot(it.slot_date, it.slot_time) }
+    }.decodeList<CounsellorSlotDto>()
+        .filter { com.example.schoolproject.data.helpers.isFutureSlot(it.slot_date, it.slot_time) }
+        .sortedBy { com.example.schoolproject.data.helpers.slotDateTime(it.slot_date, it.slot_time) }
 
     override suspend fun saveCheckIn(userId: String, checkIn: CheckInState): CheckInDto {
         requireUser(userId)
@@ -149,10 +158,18 @@ class CalmaRepository : CalmaDataSource {
 
     override suspend fun fetchActivities(userId: String): List<ActivityDto> {
         requireUser(userId)
-        return client.from("user_activities").select {
-            filter { eq("user_id", userId) }
-            order("created_at", Order.DESCENDING)
-        }.decodeList<ActivityDto>()
+        val rows = mutableListOf<ActivityDto>()
+        var page: List<ActivityDto>
+        do {
+            page = client.from("user_activities").select {
+                filter { eq("user_id", userId) }
+                order("created_at", Order.DESCENDING)
+                order("id", Order.DESCENDING)
+                range(rows.size.toLong(), rows.size.toLong() + 99)
+            }.decodeList<ActivityDto>()
+            rows.addAll(page)
+        } while (page.size == 100)
+        return rows
     }
 
     override suspend fun saveActivity(activity: ActivityDto): ActivityDto {

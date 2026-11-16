@@ -26,10 +26,28 @@ fun displaySavedTime(timestamp: String?): String = try {
         .format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", java.util.Locale.ENGLISH))
 } catch (_: Exception) { "Saved session" }
 
-fun isFutureSlot(date: String, time: String, now: java.time.LocalDateTime = java.time.LocalDateTime.now()): Boolean = try {
+fun isFutureSlot(date: String, time: String, now: java.time.LocalDateTime = java.time.LocalDateTime.now()): Boolean =
+    slotDateTime(date, time)?.isAfter(now) == true
+
+// A passed date does not prove attendance: show it in history without changing
+// the database status to COMPLETED on the student's behalf.
+fun bookingHasPassed(booking: com.example.schoolproject.data.models.Booking,
+                     now: java.time.LocalDateTime = java.time.LocalDateTime.now()): Boolean {
+    val start = slotDateTime(booking.dateSlot, booking.timeSlot) ?: return false
+    return !start.isAfter(now)
+}
+
+fun bookingStatusLabel(booking: com.example.schoolproject.data.models.Booking): String = when (booking.status) {
+    com.example.schoolproject.data.models.BookingStatus.COMPLETED -> "Completed"
+    com.example.schoolproject.data.models.BookingStatus.CANCELLED -> "Cancelled"
+    com.example.schoolproject.data.models.BookingStatus.UPCOMING ->
+        if (bookingHasPassed(booking)) "Past appointment · awaiting status update" else "Upcoming"
+}
+
+fun slotDateTime(date: String, time: String): java.time.LocalDateTime? = try {
     val clock = try {
         java.time.LocalTime.parse(time.uppercase(java.util.Locale.ENGLISH),
             java.time.format.DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH))
     } catch (_: Exception) { java.time.LocalTime.parse(time) }
-    java.time.LocalDateTime.of(LocalDate.parse(date), clock).isAfter(now)
-} catch (_: Exception) { false }
+    java.time.LocalDateTime.of(LocalDate.parse(date), clock)
+} catch (_: Exception) { null }

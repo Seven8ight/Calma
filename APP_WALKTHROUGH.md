@@ -46,11 +46,11 @@ The existing `user_activities` table already has all the needed fields:
 - `stress_decrease_percent`: optional self-reported value
 - `created_at`: database timestamp
 
-**No additional SQL migration is needed for these app changes**, assuming the initial schema and authentication migration have already been applied.
+**No additional schema migration is needed for activity history**, assuming the initial schema and authentication migration have already been applied.
 
 ## Other completed controls
 
-- **Profile → Activity History:** shows the latest 20 saved activities, notes and timestamps.
+- **Home → Past journals & sessions** or **Profile → Journals & Session History:** opens all saved entries with Journals, Activities and Bookings tabs. Full notes and timestamps are visible; past appointments are shown without claiming attendance.
 - **Profile → Personal Details:** edits and saves the name. Email is displayed without pretending to update the authentication address.
 - **Profile → Privacy & Data:** explains storage and what is saved.
 - **Daily reminder:** requests Android notification permission, saves the chosen time and schedules an approximate daily reminder. Android battery restrictions may delay delivery. Logout disables the reminder on this device.
@@ -61,7 +61,7 @@ The existing `user_activities` table already has all the needed fields:
 
 The displayed counters are calculated from saved activity/check-in records, rather than maintaining a second counter in the profile table.
 
-The summary counts currently use the records returned by Supabase's normal list queries (normally up to 1,000 per query). That is adequate for the school demo; server-side aggregate counts and pagination are the next step for a large production dataset.
+Activities and bookings load in pages of 100 until all records are fetched. Check-in counts still use the normal Supabase list limit; server-side summaries would be appropriate for a larger production dataset.
 
 ## Reminders in simple terms
 
@@ -75,7 +75,7 @@ The reminder is approximate, not an alarm-clock promise. Notifications require p
 2. Open breathing, start it, pause, resume, and finish the two minutes.
 3. Point out that completion and saving are separate steps.
 4. Add a reflection, save, and show the saved confirmation.
-5. Open Profile → Activity History and show the same record.
+5. Open Profile → Journals & Session History and show the same record.
 6. Write and save a separate gratitude entry.
 7. Change the profile name and reminder time.
 8. Show selecting a counsellor and an available booking slot.
@@ -85,7 +85,7 @@ For an offline demonstration, disconnect before saving an activity. The app must
 
 ## Checks completed
 
-The Android debug build and lint pass. All 29 local unit tests and 6 emulator tests pass. These cover timer completion, pause/resume, required journal text, saving once, retrying a lost response, account changes, saved confirmation, reset confirmation and the existing authentication flows. The activity save/update and account-isolation rules were also checked against a temporary PostgreSQL database using the existing migrations.
+The Android debug build and lint pass. All 31 local unit tests and 9 emulator tests pass. History tests cover entries beyond the former 20-entry limit, activity tabs and selecting a counsellor with no slots. These cover timer completion, pause/resume, required journal text, saving once, retrying a lost response, account changes, saved confirmation, reset confirmation and the existing authentication flows. The activity save/update and account-isolation rules were also checked against a temporary PostgreSQL database using the existing migrations.
 
 The emulator tests use a fake repository, so they do not create cloud accounts or write to your real account. Do the demonstration above with your own account to confirm the hosted project behaves the same way. Notification permission and an actual delayed reminder should also be checked on your phone.
 
@@ -94,3 +94,7 @@ The emulator tests use a fake repository, so they do not create cloud accounts o
 Email confirmation, invitation and password-recovery redirect pages belong to the planned website. Supabase's Site URL must point to a real deployed page rather than localhost. This app work does not change your cloud authentication settings or create test accounts.
 
 The support chat still uses predefined replies; it is not an AI model or a live counsellor. Counsellor availability must be entered in the database until the staff website is built. The old unverified campus helpline number has been removed from the mockup.
+
+## Demo booking availability
+
+Run `supabase/seeds/demo_counsellor_slots.sql` in the hosted Supabase SQL Editor, then tap **Refresh availability** in Support. It adds example weekday times over the next 21 days for the three seeded counsellors. These are school demonstration times, not confirmed professional availability. Rerunning it preserves existing and booked slots. The script was checked against a temporary local PostgreSQL database; it has not been applied to your hosted project.

@@ -6,7 +6,7 @@ Apply `migrations/20250301000000_calma_init.sql` only for a new database. If it 
 
 Email/password authentication must be enabled. With Confirm email enabled, signup displays an email-confirmation notice and the user logs in after confirming. Set an accessible Site URL in Supabase for the confirmation link. This app does not require an Android deep link for that confirm-then-log-in flow. With Confirm email disabled, signup immediately opens the account.
 
-The app loads availability from `counsellor_slots`. Add actual future dates and times for counsellors in the dashboard; no availability is invented by the app. Dates are stored as `YYYY-MM-DD`. Times retain the text format used by your slot records. Slots on the current date require staff to remove or mark elapsed times unavailable, since the existing schema stores times as free text.
+The app loads availability from `counsellor_slots`. Add actual future dates and times for counsellors in the dashboard; no availability is invented by the app. Dates are stored as `YYYY-MM-DD`. Times retain the text format used by your slot records. The app hides elapsed or unreadable times and sorts valid times chronologically.
 
 ## End-to-end verification
 
@@ -30,3 +30,9 @@ The configured cloud project returned error `42P17: infinite recursion detected 
 Android API 24/25 support uses core library desugaring, as required by the [Supabase Kotlin installation documentation](https://supabase.com/docs/reference/kotlin/installing).
 
 The subsequent app-completion update passed 29 unit tests, 6 emulator tests and activity-persistence SQL checks. See `../APP_WALKTHROUGH.md` for current behavior and verification limits.
+
+## School demo: counsellors have no slots
+
+Run `seeds/demo_counsellor_slots.sql` in the Supabase SQL Editor after the existing migrations. It adds example weekday availability over the next 21 days for the three seeded demo counsellors. These are demonstration times, not real professional availability. Existing slots and booked flags are preserved on reruns. Then open Support and tap **Refresh availability**. No database permission changes are needed.
+
+The history/availability update passed the debug build, lint, 31 unit tests and 9 emulator tests. The seed was checked locally for future slots, duplicate prevention and preservation of booked slots. Hosted availability still requires you to run the seed.

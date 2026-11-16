@@ -52,6 +52,7 @@ import kotlin.math.roundToInt
 @Composable
 fun HomeScreen(
     viewModel: CalmaViewModel,
+    onViewHistory: () -> Unit,
     onGetRecommendationClicked: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -133,6 +134,10 @@ fun HomeScreen(
             enabled = !busy && dataReady, modifier = Modifier.fillMaxWidth()) { Text("Open breathing & journal") }
         Spacer(modifier = Modifier.height(16.dp))
 
+        androidx.compose.material3.OutlinedButton(onClick = onViewHistory, modifier = Modifier.fillMaxWidth()) {
+            Text("Past journals & sessions")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
         // Daily Check-In Card
         Card(
             modifier = Modifier.fillMaxWidth(),

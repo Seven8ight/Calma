@@ -41,6 +41,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.schoolproject.data.helpers.bookingHasPassed
+import com.example.schoolproject.data.helpers.bookingStatusLabel
 import com.example.schoolproject.data.models.BookingStatus
 import com.example.schoolproject.ui.theme.CalmaBackground
 import com.example.schoolproject.ui.theme.CalmaChipUnselected
@@ -68,8 +70,8 @@ fun BookingsScreen(
     val showCancelDialog by viewModel.showCancelDialog.collectAsState()
     val cancellationConfirmed by viewModel.cancellationConfirmed.collectAsState()
 
-    val upcomingBookings = bookings.filter { it.status == BookingStatus.UPCOMING }
-    val historyBookings = bookings.filter { it.status != BookingStatus.UPCOMING }
+    val upcomingBookings = bookings.filter { it.status == BookingStatus.UPCOMING && !bookingHasPassed(it) }
+    val historyBookings = bookings.filter { it.status != BookingStatus.UPCOMING || bookingHasPassed(it) }
 
     val slots = allSlots.filter { it.counsellor_id == selectedCounsellor.id }
 
@@ -88,7 +90,7 @@ fun BookingsScreen(
                 if (counsellors.isEmpty()) Text("No counsellors are available yet.")
                 counsellors.forEach { counsellor ->
                     androidx.compose.material3.TextButton(onClick = { viewModel.selectCounsellorForBooking(counsellor); showCounsellors = false }) {
-                        Text(counsellor.name)
+                        Text("${counsellor.name} · ${allSlots.count { it.counsellor_id == counsellor.id }} times")
                     }
                 }
             } }, confirmButton = { androidx.compose.material3.TextButton(onClick = { showCounsellors = false }) { Text("Close") } })
@@ -284,6 +286,10 @@ fun BookingsScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
+        if (slots.isEmpty()) {
+            Text("This counsellor can be selected, but no future appointment times have been published. Choose another counsellor or refresh after availability is added.", color = CalmaTextMuted)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
         // Available slots
         Text(
             text = if (slots.isEmpty()) "No available slots for this counsellor" else "Available sessions",
@@ -375,7 +381,7 @@ fun BookingsScreen(
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = if (history.status == BookingStatus.CANCELLED) "Cancelled" else "Completed",
+                            text = bookingStatusLabel(history),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = CalmaTextMuted

@@ -46,6 +46,7 @@ fun MainContainerScreen(
     onNavigateToActivity: () -> Unit,
     onNavigateToBookings: () -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     initialTab: BottomTab = BottomTab.HOME
 ) {
     val busy by viewModel.busy.collectAsState()
@@ -76,6 +77,7 @@ fun MainContainerScreen(
             } else when (selectedTab) {
                 BottomTab.HOME -> HomeScreen(
                     viewModel = viewModel,
+                    onViewHistory = onNavigateToHistory,
                     onGetRecommendationClicked = onNavigateToActivity
                 )
                 BottomTab.SUPPORT -> SupportScreen(
@@ -85,6 +87,7 @@ fun MainContainerScreen(
                 BottomTab.PROFILE -> ProfileScreen(
                     viewModel = viewModel,
                     onNavigateToBookings = onNavigateToBookings,
+                    onNavigateToHistory = onNavigateToHistory,
                     onLogOutClicked = onNavigateToLogin
                 )
             }

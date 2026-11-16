@@ -5,6 +5,7 @@ sealed class Screen(val route: String) {
     object Auth : Screen("auth")
     object MainContainer : Screen("main_container")
     object PersonalisedActivity : Screen("activity")
+    object History : Screen("history")
     object Bookings : Screen("bookings")
     object BookingConfirmation : Screen("booking_confirmation")
 }

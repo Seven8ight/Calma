@@ -32,9 +32,8 @@ import java.util.Calendar
 import java.util.Locale
 
 @Composable
-fun ProfileScreen(viewModel: CalmaViewModel, onNavigateToBookings: () -> Unit, onLogOutClicked: () -> Unit) {
+fun ProfileScreen(viewModel: CalmaViewModel, onNavigateToBookings: () -> Unit, onLogOutClicked: () -> Unit, onNavigateToHistory: () -> Unit) {
     val profile by viewModel.userProfile.collectAsState()
-    val activities by viewModel.activities.collectAsState()
     val busy by viewModel.busy.collectAsState()
     val authState by viewModel.authUIState.collectAsState()
     val context = LocalContext.current
@@ -43,7 +42,6 @@ fun ProfileScreen(viewModel: CalmaViewModel, onNavigateToBookings: () -> Unit, o
     var editName by remember { mutableStateOf(false) }
     var name by remember(profile.name) { mutableStateOf(profile.name) }
     var showPrivacy by remember { mutableStateOf(false) }
-    var showHistory by remember { mutableStateOf(false) }
     var notificationsAllowed by remember { mutableStateOf(ReminderScheduler.isAllowed(context)) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         notificationsAllowed = granted && ReminderScheduler.isAllowed(context)
@@ -79,20 +77,6 @@ fun ProfileScreen(viewModel: CalmaViewModel, onNavigateToBookings: () -> Unit, o
         text = { Text("Your profile, check-ins, bookings, saved activities and support-chat messages are stored in Calma's Supabase database and linked to your account.\n\nSupport-chat replies are predefined automated messages.\n\nActivity timers and notes stay unsaved until you tap Save. Logging out clears your account's data from the app's memory and turns off this device's reminders.") },
         confirmButton = { TextButton(onClick = { showPrivacy = false }) { Text("Close") } })
 
-    if (showHistory) AlertDialog(onDismissRequest = { showHistory = false },
-        title = { Text("Recent activities") },
-        text = { Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (activities.isEmpty()) Text("No saved activities yet. Finish a breathing session or write a gratitude entry, then tap Save.")
-            if (activities.size > 20) Text("Showing your latest 20 activities.")
-            activities.take(20).forEach { activity ->
-                Text(if (activity.activity_type == "GRATITUDE_JOURNAL") "Gratitude journal" else "Breathing · ${activity.duration_seconds / 60} min", fontWeight = FontWeight.Bold)
-                Text(displaySavedTime(activity.created_at))
-                activity.gratitude_note?.takeIf { it.isNotBlank() }?.let { Text(it) }
-                activity.stress_decrease_percent?.let { Text("Self-reported stress decrease: $it%") }
-                HorizontalDivider()
-            }
-        } }, confirmButton = { TextButton(onClick = { showHistory = false }) { Text("Close") } })
-
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("Profile", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Text(profile.name, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
@@ -106,7 +90,7 @@ fun ProfileScreen(viewModel: CalmaViewModel, onNavigateToBookings: () -> Unit, o
         }
         OutlinedButton(onClick = { name = profile.name; editName = true }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("Personal Details") }
         OutlinedButton(onClick = onNavigateToBookings, modifier = Modifier.fillMaxWidth()) { Text("My Bookings") }
-        OutlinedButton(onClick = { showHistory = true }, modifier = Modifier.fillMaxWidth()) { Text("Activity History") }
+        OutlinedButton(onClick = onNavigateToHistory, modifier = Modifier.fillMaxWidth()) { Text("Journals & Session History") }
         OutlinedButton(onClick = { showPrivacy = true }, modifier = Modifier.fillMaxWidth()) { Text("Privacy & Data") }
 
         Text("Daily check-in reminder", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)

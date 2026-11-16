@@ -78,6 +78,7 @@ fun CalmaNavGraph(
                 onNavigateToBookings = {
                     navController.navigate(Screen.Bookings.route)
                 },
+                onNavigateToHistory = { navController.navigate(Screen.History.route) },
                 onNavigateToLogin = { viewModel.logout() }
             )
         }
@@ -89,6 +90,10 @@ fun CalmaNavGraph(
                     navController.popBackStack()
                 }
             )
+        }
+
+        composable(Screen.History.route) {
+            com.example.schoolproject.ui.screens.HistoryScreen(viewModel, onBack = { navController.popBackStack() })
         }
 
         composable(Screen.Bookings.route) {
