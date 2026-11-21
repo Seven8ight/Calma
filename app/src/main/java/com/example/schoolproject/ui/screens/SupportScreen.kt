@@ -63,6 +63,13 @@ fun SupportScreen(
     onBookCounsellorClicked: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) } // 0 = AI Chatbot, 1 = Counselling
+    val counsellingRequested by viewModel.counsellingRequested.collectAsState()
+    LaunchedEffect(counsellingRequested) {
+        if (counsellingRequested) {
+            selectedTab = 1
+            viewModel.consumeCounsellingRequest()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -152,7 +159,7 @@ fun ChatbotTabContent(viewModel: CalmaViewModel) {
     val listState = rememberLazyListState()
     LaunchedEffect(messages.size) { if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex) }
 
-    val quickPills = listOf("I feel anxious", "Talk to a counsellor", "Suggest activity")
+    val quickPills by viewModel.quickReplies.collectAsState()
 
     Column(
         modifier = Modifier

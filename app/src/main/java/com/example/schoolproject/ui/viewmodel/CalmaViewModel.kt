@@ -2,6 +2,8 @@ package com.example.schoolproject.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.schoolproject.data.chat.ChatEngine
+import com.example.schoolproject.data.chat.CheckInProgress
 import com.example.schoolproject.data.models.*
 import com.example.schoolproject.data.remote.*
 import com.example.schoolproject.data.helpers.checkInStreak
@@ -18,7 +20,10 @@ sealed interface AuthUIState {
     data class EmailConfirmationRequired(val message: String) : AuthUIState
 }
 
-class CalmaViewModel(private val repository: CalmaDataSource = CalmaRepository()) : ViewModel() {
+class CalmaViewModel(
+    private val repository: CalmaDataSource = CalmaRepository(),
+    private val chatEngine: ChatEngine = ChatEngine()
+) : ViewModel() {
     private val _session = MutableStateFlow<CalmaSession>(CalmaSession.Initializing)
     val session = _session.asStateFlow()
     private val _authUIState = MutableStateFlow<AuthUIState>(AuthUIState.Idle)
@@ -52,6 +57,11 @@ class CalmaViewModel(private val repository: CalmaDataSource = CalmaRepository()
     val cancellationConfirmed = _cancellationConfirmed.asStateFlow()
     private val _chatMessages = MutableStateFlow(emptyList<ChatMessage>())
     val chatMessages = _chatMessages.asStateFlow()
+    private val _quickReplies = MutableStateFlow(ChatEngine.DEFAULT_CHIPS)
+    val quickReplies = _quickReplies.asStateFlow()
+    private val _counsellingRequested = MutableStateFlow(false)
+    val counsellingRequested = _counsellingRequested.asStateFlow()
+    private var checkInProgress: CheckInProgress? = null
     private val _breathingState = MutableStateFlow(BreathingSessionState())
     val breathingState = _breathingState.asStateFlow()
     private val _busy = MutableStateFlow(false)
@@ -185,15 +195,18 @@ class CalmaViewModel(private val repository: CalmaDataSource = CalmaRepository()
             val saved = repository.saveChatMessage(userId, MessageSender.USER, text.trim())
             _chatMessages.update { it + saved }
             onSaved()
-            val reply = when {
-                text.contains("anxious", true) -> "Thank you for sharing. Would you like to try a breathing exercise or speak with a counsellor?"
-                text.contains("counsellor", true) || text.contains("therapist", true) -> "You can find campus counsellors and their available sessions in the Counselling tab."
-                else -> "Thank you for sharing. You can try a breathing activity or book a conversation with a counsellor."
-            }
-            val bot = repository.saveChatMessage(userId, MessageSender.BOT, reply)
+            // The check-in progress is only committed once the reply has been saved, so a failed
+            // save never leaves the chat and the engine out of step.
+            val turn = chatEngine.respond(text, checkInProgress)
+            val bot = repository.saveChatMessage(userId, MessageSender.BOT, turn.reply.text)
             _chatMessages.update { it + bot }
+            checkInProgress = turn.progress
+            _quickReplies.value = turn.reply.chips
+            if (turn.reply.openCounselling) _counsellingRequested.value = true
         }
     }
+
+    fun consumeCounsellingRequest() { _counsellingRequested.value = false }
 
     fun selectCounsellorForBooking(counsellor: Counsellor) {
         _selectedCounsellorForBooking.value = counsellor
@@ -332,6 +345,9 @@ class CalmaViewModel(private val repository: CalmaDataSource = CalmaRepository()
         _counsellors.value = emptyList()
         _bookings.value = emptyList()
         _chatMessages.value = emptyList()
+        checkInProgress = null
+        _quickReplies.value = ChatEngine.DEFAULT_CHIPS
+        _counsellingRequested.value = false
         _slots.value = emptyList()
         _selectedSlot.value = null
         _selectedCounsellorForBooking.value = emptyCounsellor
